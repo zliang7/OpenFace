@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)lib\3rdParty\OpenCV3.2\include\opencv;$(SolutionDir)lib\3rdParty\OpenCV3.2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib\3rdParty\OpenCV3.2\$(PlatformTarget)\$(PlatformToolset)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_world320.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>xcopy /I /E /Y /D /C "$(SolutionDir)lib\3rdParty\OpenCV3.2\$(PlatformTarget)\$(PlatformToolset)\bin\opencv_world320.dll" "$(OutDir)"
+xcopy /I /E /Y /D /C "$(SolutionDir)lib\3rdParty\OpenCV3.2\bin\opencv_ffmpeg320.dll" "$(OutDir)"
+xcopy /I /E /Y /D /C "$(SolutionDir)lib\3rdParty\OpenCV3.2\bin\opencv_ffmpeg320_64.dll" "$(OutDir)"
+xcopy /I /E /Y /D /C "$(SolutionDir)lib\3rdParty\OpenCV3.2\classifiers" "$(OutDir)classifiers"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>
