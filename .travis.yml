@@ -19,7 +19,7 @@ before_install:
   - if [ ${TRAVIS_OS_NAME} = linux ]; then  
       echo "Installing OpenCV dependencies" ;
       echo "Installing video dependencies" ;
-      sudo apt-get install libv4l-0 libv4l-dev;
+      sudo apt-get install libv4l-0 libv4l-dev ffmpeg;
       sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev;
       echo "Installing other dependencies" ;
       sudo apt-get install git libgtk2.0-dev pkg-config;
