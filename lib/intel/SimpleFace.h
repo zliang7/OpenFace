@@ -33,6 +33,7 @@ class FaceDetector {
 public:
     FaceDetector(const cv::Mat& image):
         FaceDetector(image, cv::Mat_<float>()) {}
+    FaceDetector(void* buffer, size_t size);
     FaceDetector(const cv::Mat& image, const cv::Mat_<float>& depth);
 
     bool hasFace() const {
@@ -72,7 +73,7 @@ inline float getFaceDistance(const Face& face) {
 }
 
 inline FaceDirection getFaceDirection(const Face& face) {
-    const double threshold = M_PI / 18;
+    const double threshold = M_PI / 12;
     auto pose = face.headPose();
     return pose[3] > threshold || pose[3] < -threshold ||
            pose[4] > threshold || pose[4] < -threshold ||

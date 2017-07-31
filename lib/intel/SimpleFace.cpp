@@ -1,5 +1,6 @@
 #include <algorithm>
 
+#include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <dlib/image_processing/frontal_face_detector.h>
 
@@ -21,6 +22,12 @@ FaceDetector::FaceDetector(const cv::Mat& image, const cv::Mat_<float>& depth):
     std::vector<double> confidences;
     dlib::frontal_face_detector face_detector_hog = dlib::get_frontal_face_detector();
     LandmarkDetector::DetectFacesHOG(faces_, image_, face_detector_hog, confidences);
+}
+
+FaceDetector::FaceDetector(void* buffer, size_t size):
+    FaceDetector(
+        cv::imdecode(cv::Mat(1, size, CV_8UC1, buffer), cv::IMREAD_GRAYSCALE),
+        cv::Mat_<float>()) {
 }
 
 Face FaceDetector::getFaceByIndex(size_t index) const {
