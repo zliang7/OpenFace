@@ -29,12 +29,13 @@ private:
     cv::Point3f right_gaze_;
 };
 
-class FaceDetector {
+class FaceDetector final {
 public:
     FaceDetector(const cv::Mat& image):
         FaceDetector(image, cv::Mat_<float>()) {}
     FaceDetector(void* buffer, size_t size);
     FaceDetector(const cv::Mat& image, const cv::Mat_<float>& depth);
+    ~FaceDetector();
 
     bool hasFace() const {
         return faces_.size() > 0;
@@ -57,7 +58,7 @@ private:
     cv::Point2f focal_length_;
     std::vector<cv::Rect_<double>> faces_;
     mutable size_t default_face_;
-    //void* model_;
+    mutable void* model_;
 };
 
 

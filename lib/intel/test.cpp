@@ -6,37 +6,41 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <SimpleFace.h>
 
-int main (int argc, char *argv[]) {
+bool test(const char* filename) {
     struct stat st;
     char *buffer = NULL;
     size_t size = 0;
-    if (argc > 1 && stat(argv[1], &st) == 0) {
-        size = st.st_size;
-        buffer = (char*)malloc(size);
-    }
-    if (buffer == NULL) {
+    if (stat(filename, &st) != 0) {
         std::cerr << "Could not read the input image" << std::endl;
-        return 1;
+        return false;
     }
-    std::ifstream(argv[1], std::ios::binary).read(buffer, size);
+    size = st.st_size;
+    buffer = (char*)malloc(size);
+    std::ifstream(filename, std::ios::binary).read(buffer, size);
     FaceDetector fd(buffer, size);
     free(buffer);
 
 /*  cv::Mat image;
-    if (argc > 1)
-        image = cv::imread(argv[1], -1);
+    image = cv::imread(filename, -1);
     if (image.empty()) {
         std::cerr << "Could not read the input image" << std::endl;
-        return 1;
+        return false;
     }
     FaceDetector fd(image);*/
     if (!fd.hasFace()) {
         std::cerr << "Could not find face in image" << std::endl;
-        return 1;
+        return false;
     }
     printf("%zd faces found\n", fd.numberOfFaces());
     Face face = fd.defaultFace();
     printf("%f\n", getFaceDistance(face));
     printf("%s\n", getFaceDirection(face)? "AWAY_SCREEN" : "TOWARD_SCREEN");
+    return true;
+}
+
+int main (int argc, char *argv[]) {
+    for (int i = 1; i < argc; ++i) {
+        test(argv[i]);
+    }
     return 0;
 }
