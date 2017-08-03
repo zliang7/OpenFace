@@ -69,17 +69,27 @@ enum FaceDirection {
     AWAY_SCREEN
 };
 
+constexpr double threshold = M_PI / 12;
+
 inline float getFaceDistance(const Face& face) {
     return face.headPose()[2];
 }
 
 inline FaceDirection getFaceDirection(const Face& face) {
-    const double threshold = M_PI / 12;
     auto pose = face.headPose();
     return pose[3] > threshold || pose[3] < -threshold ||
-           pose[4] > threshold || pose[4] < -threshold ||
-           pose[5] > threshold || pose[5] < -threshold ?
+           pose[4] > threshold || pose[4] < -threshold?
            AWAY_SCREEN : TOWARD_SCREEN;
+}
+
+inline bool isAwry(const Face& face) {
+    auto pose = face.headPose();
+    return pose[5] > threshold || pose[5] < -threshold;
+}
+
+inline bool isCenter(const Face& face) {
+    auto pose = face.headPose();
+    return pose[0] > - 100 && pose[0] < 100;  // TODO: a better algorithm
 }
 
 // this is unsupported because the body pose is unknown
