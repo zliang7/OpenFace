@@ -205,6 +205,9 @@ private:
 	// A vectorised version of mean shift (Not actually used)
 	void VectorisedMeanShift(cv::Mat_<double>& meanShifts, const vector<cv::Mat_<float> >& patch_expert_responses, const cv::Mat_<double> &iis, const cv::Mat_<double> &jjs, const cv::Mat_<double> &dxs, const cv::Mat_<double> &dys, const cv::Size patchSize, double sigma, int scale, int view_id);
 
+        static bool detector_initialized;
+        static dlib::frontal_face_detector default_face_detector;
+        static dlib::frontal_face_detector& get_frontal_face_detector();
   };
   //===========================================================================
 }

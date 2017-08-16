@@ -49,6 +49,8 @@ public:
         return getFaceByIndex(index);
     }
 
+    static void preloadModel(const std::string& location);
+
 private:
     static cv::Mat_<uchar> grayscalize(const cv::Mat& in);
 

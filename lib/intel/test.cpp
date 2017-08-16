@@ -38,9 +38,19 @@ bool test(const char* filename) {
     return true;
 }
 
+#include <time.h>
 int main (int argc, char *argv[]) {
+    clock_t t0 = clock();
+    FaceDetector::preloadModel("");
+    clock_t t1 = clock();
+    printf("loading time: %ld ms\n\n", (t1 - t0) / (CLOCKS_PER_SEC / 1000));
+
+    t0 = t1;
     for (int i = 1; i < argc; ++i) {
         test(argv[i]);
+        t1 = clock();
+        printf("analysis time: %ld ms\n\n", (t1 - t0) / (CLOCKS_PER_SEC / 1000));
+        t0 = t1;
     }
     return 0;
 }

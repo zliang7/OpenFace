@@ -97,7 +97,7 @@ CLNF::CLNF(const CLNF& other): pdm(other.pdm), params_local(other.params_local.c
 		this->kde_resp_precalc.insert(std::pair<int, cv::Mat_<float>>(it->first, it->second.clone()));
 	}
 
-	this->face_detector_HOG = dlib::get_frontal_face_detector();
+	this->face_detector_HOG = get_frontal_face_detector();
 
 }
 
@@ -151,7 +151,7 @@ CLNF & CLNF::operator= (const CLNF& other)
 		this->hierarchical_params = other.hierarchical_params;
 	}
 
-	face_detector_HOG = dlib::get_frontal_face_detector();
+	face_detector_HOG = get_frontal_face_detector();
 
 	return *this;
 }
@@ -179,7 +179,7 @@ CLNF::CLNF(const CLNF&& other)
 	triangulations = other.triangulations;
 	kde_resp_precalc = other.kde_resp_precalc;
 
-	face_detector_HOG = dlib::get_frontal_face_detector();
+	face_detector_HOG = get_frontal_face_detector();
 
 	// Copy over the hierarchical models
 	this->hierarchical_mapping = other.hierarchical_mapping;
@@ -214,7 +214,7 @@ CLNF & CLNF::operator= (const CLNF&& other)
 	triangulations = other.triangulations;
 	kde_resp_precalc = other.kde_resp_precalc;
 
-	face_detector_HOG = dlib::get_frontal_face_detector();
+	face_detector_HOG = get_frontal_face_detector();
 
 	// Copy over the hierarchical models
 	this->hierarchical_mapping = other.hierarchical_mapping;
@@ -322,7 +322,7 @@ void CLNF::Read_CLNF(string clnf_location)
 	patch_experts.Read(intensity_expert_locations, depth_expert_locations, ccnf_expert_locations);
 
 	// Read in a face detector
-	face_detector_HOG = dlib::get_frontal_face_detector();
+	face_detector_HOG = get_frontal_face_detector();
 
 }
 
@@ -395,9 +395,10 @@ void CLNF::Read(string main_location)
 		
 			this->hierarchical_mapping.push_back(mappings);
 
-			CLNF part_model(location);
+			/*CLNF part_model(location);
 
-			this->hierarchical_models.push_back(part_model);
+			this->hierarchical_models.push_back(part_model);*/
+                        this->hierarchical_models.emplace(this->hierarchical_models.end(), location);
 
 			this->hierarchical_model_names.push_back(part_name);
 
@@ -1317,4 +1318,14 @@ void CLNF::NonVectorisedMeanShift(cv::Mat_<double>& out_mean_shifts, const vecto
 		out_mean_shifts.at<double>(i + n, 0) = msy;
 			
 	}
+}
+
+bool CLNF::detector_initialized = false;
+dlib::frontal_face_detector CLNF::default_face_detector;
+dlib::frontal_face_detector& CLNF::get_frontal_face_detector() {
+    if (!detector_initialized) {
+        default_face_detector = dlib::get_frontal_face_detector();
+        detector_initialized = true;
+    }
+    return default_face_detector;
 }
