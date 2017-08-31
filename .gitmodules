@@ -1,0 +1,3 @@
+[submodule "lib/jsnipp"]
+	path = lib/jsnipp
+	url = git@github.com:zliang7/jsnipp.git

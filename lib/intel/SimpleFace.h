@@ -29,7 +29,7 @@ private:
     cv::Point3f right_gaze_;
 };
 
-class FaceDetector final {
+class __attribute__ ((visibility ("default"))) FaceDetector final {
 public:
     FaceDetector(const cv::Mat& image):
         FaceDetector(image, cv::Mat_<float>()) {}
