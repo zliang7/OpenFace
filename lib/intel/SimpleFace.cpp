@@ -85,20 +85,20 @@ Face FaceDetector::getFaceByIndex(size_t index) const {
     det_parameters.track_gaze = true;
 /*  det_parameters.validate_detections = false;
     bool success = LandmarkDetector::DetectLandmarksInImage(image_, depth_, faces_[index], clnf_model, det_parameters);*/
-    bool success = LandmarkDetector::DetectLandmarksInVideo(image_, depth_, clnf_model, det_parameters);
+    if (!LandmarkDetector::DetectLandmarksInVideo(image_, depth_, clnf_model, det_parameters))
+        return Face(cv::Rect_<double>(), cv::Vec6d(), cv::Point3f(), cv::Point3f());
+
     cv::Vec6d pose = LandmarkDetector::GetCorrectedPoseWorld(clnf_model, focal_length_.x, focal_length_.y, optical_center_.x, optical_center_.y);
     // Gaze tracking, absolute gaze direction
     cv::Point3f left_gaze(0, 0, -1);
     cv::Point3f right_gaze(0, 0, -1);
-    if (success) {
-        FaceAnalysis::EstimateGaze(clnf_model, left_gaze, focal_length_.x, focal_length_.y, optical_center_.x, optical_center_.y, true);
-        FaceAnalysis::EstimateGaze(clnf_model, right_gaze, focal_length_.x, focal_length_.y, optical_center_.x, optical_center_.y, false);
-    }
+    FaceAnalysis::EstimateGaze(clnf_model, left_gaze, focal_length_.x, focal_length_.y, optical_center_.x, optical_center_.y, true);
+    FaceAnalysis::EstimateGaze(clnf_model, right_gaze, focal_length_.x, focal_length_.y, optical_center_.x, optical_center_.y, false);
     return Face(faces_[index], pose, left_gaze, right_gaze);
 }
 
 Face FaceDetector::defaultFace() const {
-    if (default_face_ > numberOfFaces()) {
+    if (default_face_ >= numberOfFaces()) {
         assert(hasFace());
         auto compare = [](const cv::Rect_<double>& a, const cv::Rect_<double>& b) {
             return a.area() < b.area();

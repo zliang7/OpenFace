@@ -13,6 +13,7 @@ include_directories(../local/FaceAnalyser/include)
 include_directories(../local/LandmarkDetector/include)
 include_directories(${TBB_ROOT_DIR}/include)
 
+add_definitions(-DYUNOS_EXPORT= -DLOG_TAG="ERGO")
 add_library(SimpleFace SHARED ${SOURCE} ${HEADERS})
 set_property(TARGET SimpleFace PROPERTY CXX_VISIBILITY_PRESET hidden)
 set_property(TARGET SimpleFace PROPERTY VISIBILITY_INLINES_HIDDEN TRUE)

@@ -18,7 +18,8 @@ public:
     }
 
 private:
-    Face(cv::Rect_<double> box, cv::Vec6d pose, cv::Point3f left, cv::Point3f right):
+    Face(const cv::Rect_<double>& box, const cv::Vec6d& pose,
+         const cv::Point3f& left, const cv::Point3f& right):
         box_(box), pose_(pose), left_gaze_(left), right_gaze_(right) {}
     friend class FaceDetector;
 

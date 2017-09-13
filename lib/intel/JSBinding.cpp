@@ -1,4 +1,7 @@
+#include <fcntl.h>
+
 #include <jsnipp.h>
+#include <jsni/Log.h>
 
 #include "SimpleFace.h"
 
@@ -44,13 +47,11 @@ public:
 
 class JSFaceDetector {
 public:
-    JSFaceDetector(JSObject, JSArray args) {
-        if (args.length() == 0) return;
-        JSValue jsval = args[0];
-        if (!jsval.is_typedarray()) return;
-        auto img = JSTypedArray<uint8_t>(jsval);
-        simple_face.reset(new FaceDetector(img.buffer(), img.length()));
-    }
+    static std::string setup(JSObject cls);
+
+private:
+    friend class JSNativeConstructor<JSFaceDetector>;
+    JSFaceDetector(JSObject, JSArray args);
 
     JSValue hasFace(JSObject) const {
         if (!simple_face)  return JSNull();
@@ -73,21 +74,50 @@ public:
         return JSFace(simple_face->defaultFace());
     }
 
-    static std::string setup(JSObject cls) {
-        cls.defineProperty("hasFace", JSPropertyAccessor(JSNativeGetter<const JSFaceDetector, &JSFaceDetector::hasFace>()));
-        cls.defineProperty("numberOfFaces", JSPropertyAccessor(JSNativeGetter<const JSFaceDetector, &JSFaceDetector::numberOfFaces>()));
-        cls.defineProperty("defaultFace", JSPropertyAccessor(JSNativeGetter<const JSFaceDetector, &JSFaceDetector::defaultFace>()));
-        cls.setProperty("getFaceByIndex", JSNativeMethod<const JSFaceDetector, &JSFaceDetector::getFaceByIndex>());
-        return "";
-    }
-
-private:
     std::unique_ptr<FaceDetector> simple_face;
 };
 
+JSFaceDetector::JSFaceDetector(JSObject, JSArray args) {
+    if (args.length() == 0) return;
+    JSValue jsval = args[0];
+    if (!jsval.is_typedarray()) return;
+    auto img = JSTypedArray<uint8_t>(jsval);
+
+#ifdef DUMP_JPEG
+    int fd = creat("/tmp/egroshot.jpg", 00644);
+    write(fd, img.buffer(), img.length());
+    fsync(fd);
+    close(fd);
+#endif
+
+    simple_face.reset(new FaceDetector(img.buffer(), img.length()));
+}
+
+std::string JSFaceDetector::setup(JSObject cls) {
+    cls.defineProperty("hasFace", JSPropertyAccessor(JSNativeGetter<const JSFaceDetector, &JSFaceDetector::hasFace>()));
+    cls.defineProperty("numberOfFaces", JSPropertyAccessor(JSNativeGetter<const JSFaceDetector, &JSFaceDetector::numberOfFaces>()));
+    cls.defineProperty("defaultFace", JSPropertyAccessor(JSNativeGetter<const JSFaceDetector, &JSFaceDetector::defaultFace>()));
+    cls.setProperty("getFaceByIndex", JSNativeMethod<const JSFaceDetector, &JSFaceDetector::getFaceByIndex>());
+    return "";
+}
+
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <dlfcn.h>
+static std::string getModulePath() {
+    Dl_info info;
+    dladdr(reinterpret_cast<void*>(getModulePath), &info);
+    const char *p = strstr(info.dli_fname, "/lib/native/");
+    assert(p);
+    return std::string(info.dli_fname, p - info.dli_fname);
+}
+
 __attribute__ ((visibility("default")))
 int JSNI_Init(JSNIEnv* env, JsValue exports) {
-//  LOG_I("SimpleFace JSNI module is loaded");
+    LOG_I("SimpleFace JSNI module is loaded");
+    FaceDetector::preloadModel(getModulePath() + "/model/main_clnf_general.txt");
 
     JSValue::setup(env);
     JSObject jsobj(exports);
