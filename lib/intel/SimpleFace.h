@@ -5,30 +5,7 @@
 
 #include <opencv2/core/core.hpp>
 
-class Face {
-public:
-    cv::Rect_<double> boundingBox() const {
-        return box_;
-    }
-    cv::Vec6d headPose() const {
-        return pose_;
-    }
-    std::tuple<cv::Point3f, cv::Point3f> gazeDirection() const {
-        return std::make_tuple(left_gaze_, left_gaze_);
-    }
-
-private:
-    Face(const cv::Rect_<double>& box, const cv::Vec6d& pose,
-         const cv::Point3f& left, const cv::Point3f& right):
-        box_(box), pose_(pose), left_gaze_(left), right_gaze_(right) {}
-    friend class FaceDetector;
-
-    //double confidence_;
-    cv::Rect_<double> box_;
-    cv::Vec6d pose_;
-    cv::Point3f left_gaze_;
-    cv::Point3f right_gaze_;
-};
+#include <Face.h>
 
 class __attribute__ ((visibility ("default"))) FaceDetector final {
 public:
@@ -63,37 +40,3 @@ private:
     mutable size_t default_face_;
     mutable void* model_;
 };
-
-
-// High level API, defined by Nathaniel
-
-enum FaceDirection {
-    TOWARD_SCREEN,
-    AWAY_SCREEN
-};
-
-constexpr double threshold = M_PI / 12;
-
-inline float getFaceDistance(const Face& face) {
-    return face.headPose()[2];
-}
-
-inline FaceDirection getFaceDirection(const Face& face) {
-    auto pose = face.headPose();
-    return pose[3] > threshold || pose[3] < -threshold ||
-           pose[4] > threshold || pose[4] < -threshold?
-           AWAY_SCREEN : TOWARD_SCREEN;
-}
-
-inline bool isAwry(const Face& face) {
-    auto pose = face.headPose();
-    return pose[5] > threshold || pose[5] < -threshold;
-}
-
-inline bool isCenter(const Face& face) {
-    auto pose = face.headPose();
-    return pose[0] > - 100 && pose[0] < 100;  // TODO: a better algorithm
-}
-
-// this is unsupported because the body pose is unknown
-//float getPosture(const Face& face);

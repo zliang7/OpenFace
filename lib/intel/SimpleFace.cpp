@@ -10,40 +10,15 @@
 #include <LandmarkDetectorParameters.h>
 #include <GazeEstimation.h>
 
+#include "CLNFModelTemplate.h"
 #include "SimpleFace.h"
 
-static uint8_t model_template[sizeof(LandmarkDetector::CLNF)];
-static bool is_loaded = false;
-
-void loadCLNFModel(const std::string& location) {
-    if (is_loaded)
-        reinterpret_cast<LandmarkDetector::CLNF*>(model_template)->~CLNF();
-
-    int fdout = dup(1);
-    close(1);
-    new (model_template) LandmarkDetector::CLNF(location);
-    is_loaded = true;
-    dup2(fdout, 1);
-    close(fdout);
-}
-
-const LandmarkDetector::CLNF& getCLNFModelTemplate() {
-    if (!is_loaded) {
-        LandmarkDetector::FaceModelParameters parameters;
-        loadCLNFModel(parameters.model_location);
-    }
-    return *reinterpret_cast<LandmarkDetector::CLNF*>(model_template);
-}
-
+static CLNFModelTemplate model_template;
 void FaceDetector::preloadModel(const std::string& location) {
-    if (is_loaded) return;
-
-    std::string loc = location;
-    if (loc.empty()) {
-        LandmarkDetector::FaceModelParameters parameters;
-        loc = parameters.model_location;
-    }
-    loadCLNFModel(loc);
+    if (location.empty())
+        model_template.load();
+    else
+        model_template.load(location);
 }
 
 FaceDetector::FaceDetector(const cv::Mat& image, const cv::Mat_<float>& depth):
@@ -78,23 +53,29 @@ Face FaceDetector::getFaceByIndex(size_t index) const {
 
     // Estimate head pose and eye gaze
     if (model_ == nullptr) {
-        model_ = new LandmarkDetector::CLNF(getCLNFModelTemplate());
+        model_ = new LandmarkDetector::CLNF(model_template.get());
     }
     LandmarkDetector::CLNF& clnf_model = *reinterpret_cast<LandmarkDetector::CLNF*>(model_);
     LandmarkDetector::FaceModelParameters det_parameters;
+#if TRACK_GAZE
     det_parameters.track_gaze = true;
+#endif
 /*  det_parameters.validate_detections = false;
     bool success = LandmarkDetector::DetectLandmarksInImage(image_, depth_, faces_[index], clnf_model, det_parameters);*/
     if (!LandmarkDetector::DetectLandmarksInVideo(image_, depth_, clnf_model, det_parameters))
-        return Face(cv::Rect_<double>(), cv::Vec6d(), cv::Point3f(), cv::Point3f());
+        return Face();
 
     cv::Vec6d pose = LandmarkDetector::GetCorrectedPoseWorld(clnf_model, focal_length_.x, focal_length_.y, optical_center_.x, optical_center_.y);
+#if TRACK_GAZE
     // Gaze tracking, absolute gaze direction
     cv::Point3f left_gaze(0, 0, -1);
     cv::Point3f right_gaze(0, 0, -1);
     FaceAnalysis::EstimateGaze(clnf_model, left_gaze, focal_length_.x, focal_length_.y, optical_center_.x, optical_center_.y, true);
     FaceAnalysis::EstimateGaze(clnf_model, right_gaze, focal_length_.x, focal_length_.y, optical_center_.x, optical_center_.y, false);
     return Face(faces_[index], pose, left_gaze, right_gaze);
+#else
+    return Face(faces_[index], pose);
+#endif
 }
 
 Face FaceDetector::defaultFace() const {

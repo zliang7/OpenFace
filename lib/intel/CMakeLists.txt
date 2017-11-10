@@ -1,9 +1,14 @@
+add_library(jsnihelper SHARED jsnihelper_dummy.c)
+
 SET(SOURCE
+    CLNFModelTemplate.cpp
+    FaceAnalyzer.cpp
     SimpleFace.cpp
     JSBinding.cpp
 )
 
 SET(HEADERS
+    FaceAnalyzer.h
     SimpleFace.h
 )
 
@@ -23,13 +28,14 @@ target_link_libraries(SimpleFace LandmarkDetector)
 target_link_libraries(SimpleFace FaceAnalyser)
 target_link_libraries(SimpleFace ${OpenCV_LIBS} ${Boost_LIBRARIES} ${TBB_LIBRARIES})
 target_link_libraries(SimpleFace dlib)
+target_link_libraries(SimpleFace jsnihelper)
 
 install (TARGETS SimpleFace DESTINATION lib)
 install (FILES ${HEADERS} DESTINATION include/OpenFace)
 
 
 include_directories(.)
-add_executable(ApiTest test.cpp)
-set_property(TARGET ApiTest PROPERTY LINK_FLAGS "-u yunosLogPrint")
+add_executable(ApiTest test_new.cpp)
+set_property(TARGET ApiTest PROPERTY LINK_FLAGS "-u yunosLogPrint -u AsyncThreadWork")
 target_link_libraries(ApiTest SimpleFace)
 install (TARGETS ApiTest DESTINATION bin)

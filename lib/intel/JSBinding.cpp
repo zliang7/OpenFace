@@ -1,8 +1,12 @@
 #include <fcntl.h>
 
+#include <opencv2/imgcodecs.hpp>
+
 #include <jsnipp.h>
 #include <jsni/Log.h>
 
+#include "videorendererinterface.h"
+#include "FaceAnalyzer.h"
 #include "SimpleFace.h"
 
 using namespace jsnipp;
@@ -40,9 +44,18 @@ public:
     JSFace(const Face& face) : JSObject({
         { "boundingBox", JSRect(face.boundingBox()) },
         { "headPose",    JSHeadPose(face.headPose()) },
+#if TRACK_GAZE
         { "leftGaze",    JSPoint(std::get<0>(face.gazeDirection())) },
         { "rightGaze",   JSPoint(std::get<1>(face.gazeDirection())) }
+#endif
     }){}
+};
+
+class JSFaceCallback : public JSCallback<void, Face> {
+    using JSCallback::JSCallback;
+    JSValue jsnify(Face& face) const override {
+        return JSFace(face);
+    }
 };
 
 class JSFaceDetector {
@@ -101,6 +114,70 @@ std::string JSFaceDetector::setup(JSObject cls) {
     return "";
 }
 
+class JSFaceAnalyzer : public woogeen::base::VideoRendererARGBInterface {
+public:
+    static std::string setup(JSObject cls);
+
+    void RenderFrame(std::unique_ptr<woogeen::base::ARGBBuffer> buffer) override;
+
+private:
+    friend class JSNativeConstructor<JSFaceAnalyzer>;
+    JSFaceAnalyzer(JSObject, JSArray args);
+
+    JSValue Analyze(JSObject, JSArray args);
+
+    std::unique_ptr<FaceAnalyzer> analyzer_;
+    JSGlobalValue callback_;
+};
+
+static std::string getModulePath();
+JSFaceAnalyzer::JSFaceAnalyzer(JSObject, JSArray args) {
+    if (args.length() == 0) return;
+    JSValue jsval = args[0];
+    if (!jsval.is_function()) return;
+    callback_ = JSGlobalValue(jsval);
+    std::string location = getModulePath() + "/model/main_clnf_general.txt";
+    analyzer_.reset(new FaceAnalyzer(location));
+}
+
+void JSFaceAnalyzer::RenderFrame(std::unique_ptr<woogeen::base::ARGBBuffer> buffer) {
+    auto image = cv::Mat(buffer->resolution.height,
+                         buffer->resolution.width,
+                         CV_8UC4, buffer->buffer);
+    buffer->buffer = nullptr;
+
+    auto callback = [this](Face face) {
+        auto cb = new JSFaceCallback(this->callback_);
+        delete face.image().data;
+        (*cb)(face);
+    };
+    analyzer_->Analyze(callback, image);
+}
+
+JSValue JSFaceAnalyzer::Analyze(JSObject, JSArray args) {
+    if (args.length() == 0 || !args[0].is_typedarray())
+        return false_js;
+
+    auto array = JSTypedArray<uint8_t>(args[0]);
+    cv::Mat image = cv::Mat(1, array.length(), CV_8UC1, array.buffer());
+    image = cv::imdecode(image, cv::IMREAD_GRAYSCALE);
+
+    if (args.length() == 1 || !args[1].is_function()) {
+        return JSFace(analyzer_->Analyze(image));
+    }
+
+    JSGlobalValue callback(args[1]);
+    auto cb = [callback](Face face) {
+        auto cb = new JSFaceCallback(callback);
+        (*cb)(face);
+    };
+    return JSBoolean(analyzer_->Analyze(cb, image));
+}
+
+std::string JSFaceAnalyzer::setup(JSObject cls) {
+    cls.setProperty("analyze", JSNativeMethod<JSFaceAnalyzer, &JSFaceAnalyzer::Analyze>());
+    return "";
+}
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -117,12 +194,13 @@ static std::string getModulePath() {
 __attribute__ ((visibility("default")))
 int JSNI_Init(JSNIEnv* env, JsValue exports) {
     LOG_I("SimpleFace JSNI module is loaded");
-    FaceDetector::preloadModel(getModulePath() + "/model/main_clnf_general.txt");
+    //FaceDetector::preloadModel(getModulePath() + "/model/main_clnf_general.txt");
 
     JSValue::setup(env);
     JSObject jsobj(exports);
 
     jsobj.setProperty("FaceDetector", JSNativeConstructor<JSFaceDetector>(&JSFaceDetector::setup));
+    jsobj.setProperty("FaceAnalyzer", JSNativeConstructor<JSFaceAnalyzer>(&JSFaceAnalyzer::setup));
 
     return JSNI_VERSION_1_1;
 }
