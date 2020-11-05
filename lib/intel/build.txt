@@ -1,0 +1,31 @@
+# boost 1.64.0
+./bootstrap.sh
+./b2 --with-system --with-filesystem runtime-link=static variant=release link=static architecture=x86 address-model=32
+
+# tbb
+make arch=ia32 tbb_build_prefix=lib
+ln -s build/lib_release lib
+
+# OpenBLAS (optional)
+#make TARGET=NEHALEM BINARY=32 NOFORTRAN=1 SMP=1
+make BINARY=32
+mkdir build
+make build install
+
+# opencv 3.2.0
+mkdir build32
+cd build32
+LDFLAGS=-m32 CXXFLAGS="-m32" CFLAGS="-m32" cmake -DWITH_GTK=0 -DWITH_1394=0 -DBUILD_PERF_TESTS=0 -DBUILD_TESTS=0 ..
+# with OpenBLAS
+OpenBLAS_HOME=~/openface/OpenBLAS/build LDFLAGS=-m32 CXXFLAGS="-m32" CFLAGS="-m32" cmake -DWITH_GTK=0 -DWITH_1394=0 ..
+
+# openface
+mkdir build32
+cd build32
+LDFLAGS=-m32 CXXFLAGS="-m32" CFLAGS="-m32" cmake -DBOOST_ROOT=~/openface/boost_1_64_0 -DOpenCV_DIR=~/openface/opencv-3.2.0/build32 -DTBB_ROOT_DIR=~/openface/tbb -DDLIB_LINK_WITH_LIBPNG=0 -DDLIB_LINK_WITH_LIBJPEG=0 ..
+
+
+# 64-bit
+mkdir build
+cd build
+cmake -DBOOST_ROOT=~/openface/boost_1_64_0 -DBOOST_VER=1.64.0 -DOpenCV_DIR=~/openface/opencv-3.2.0/build -DTBB_ROOT_DIR=~/openface/tbb ..
